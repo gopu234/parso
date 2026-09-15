@@ -1,0 +1,6 @@
+{
+  "name": "Parso — Developer Utility & Decoding Suite",
+  "description": "Zero-latency developer utility suite for JWT debugging, Cron expression visualization, JSON formatting & diff, Regex testing with AI explanation, and cURL conversion.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
