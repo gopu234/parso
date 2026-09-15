@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { testRegexSafely, parseRegexTokens, REGEX_PRESETS } from '../utils/regex';
+import { testRegexSafely, parseRegexTokens, explainRegexLocally, REGEX_PRESETS } from '../utils/regex';
 import { AiRegexExplanation } from '../types';
 import {
   Regex,
@@ -14,6 +14,10 @@ import {
   Info,
   ChevronRight,
   X,
+  ShieldCheck,
+  CheckCircle2,
+  XCircle,
+  ArrowRight,
 } from 'lucide-react';
 
 export const RegexTester: React.FC = () => {
@@ -26,15 +30,9 @@ export const RegexTester: React.FC = () => {
   );
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  // AI state
-  const [aiLoading, setAiLoading] = useState<boolean>(false);
+  // Embedded Explainer state (0ms latency, zero API key required)
   const [aiExplanation, setAiExplanation] = useState<AiRegexExplanation | null>(null);
-  const [aiError, setAiError] = useState<string | null>(null);
   const [showAiModal, setShowAiModal] = useState<boolean>(false);
-
-  // AI Generator state
-  const [aiGeneratePrompt, setAiGeneratePrompt] = useState<string>('');
-  const [aiGenerateLoading, setAiGenerateLoading] = useState<boolean>(false);
 
   // Run regex test safely
   const testResult = useMemo(() => {
@@ -60,55 +58,26 @@ export const RegexTester: React.FC = () => {
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  const handleExplainWithAi = async () => {
+  const handleExplainRegex = () => {
     if (!pattern.trim()) return;
-    setAiLoading(true);
-    setAiError(null);
+    // 100% in-browser semantic AST explanation - zero API key, 0ms latency
+    const explanation = explainRegexLocally(pattern, flags, testString);
+    setAiExplanation(explanation);
     setShowAiModal(true);
-
-    try {
-      const res = await fetch('/api/ai/explain-regex', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ regex: pattern, flags, testString }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to explain regex');
-      }
-      setAiExplanation(data.data);
-    } catch (err: any) {
-      setAiError(err.message);
-    } finally {
-      setAiLoading(false);
-    }
   };
 
-  const handleGenerateWithAi = async () => {
-    if (!aiGeneratePrompt.trim()) return;
-    setAiGenerateLoading(true);
-    try {
-      const res = await fetch('/api/ai/generate-utility', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'regex', query: aiGeneratePrompt }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.error || 'Failed to generate regex');
-      }
-      if (data.data?.regex) {
-        setPattern(data.data.regex);
-        if (data.data.flags) setFlags(data.data.flags);
-        if (data.data.testCases?.shouldMatch?.length) {
-          setTestString(data.data.testCases.shouldMatch.join('\n'));
-        }
-      }
-    } catch (err: any) {
-      alert(`AI Error: ${err.message}`);
-    } finally {
-      setAiGenerateLoading(false);
-    }
+  const loadTestCasesIntoEditor = () => {
+    if (!aiExplanation?.testCases) return;
+    const { shouldMatch = [], shouldFail = [] } = aiExplanation.testCases;
+    const combined = [
+      '# Should Match:',
+      ...shouldMatch,
+      '',
+      '# Should Not Match:',
+      ...shouldFail,
+    ].join('\n');
+    setTestString(combined);
+    setShowAiModal(false);
   };
 
   // Highlighted Test String Renderer
@@ -157,21 +126,21 @@ export const RegexTester: React.FC = () => {
         <div>
           <h2 className="text-lg font-semibold text-slate-100 flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-pulse" />
-            Regex Tester & AI Explainer
+            Regex Tester & Semantic Explainer
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Real-time match highlighting, capture group inspector, visual syntax breakdown, and Gemini AI analysis.
+            Real-time match highlighting, capture group inspector, visual syntax breakdown, and instant embedded AST analysis.
           </p>
         </div>
 
-        {/* Explain with AI Button */}
+        {/* Explain Regex Button (Embedded AST engine) */}
         <button
-          id="btn-explain-regex-ai"
-          onClick={handleExplainWithAi}
+          id="btn-explain-regex-local"
+          onClick={handleExplainRegex}
           className="px-3.5 py-2 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white text-xs font-semibold flex items-center space-x-2 transition shadow-md shadow-indigo-500/20"
         >
-          <Sparkles className="w-4 h-4 text-indigo-200" />
-          <span>Explain Regex with AI</span>
+          <Zap className="w-4 h-4 text-amber-300" />
+          <span>Explain Regex (Embedded Engine)</span>
         </button>
       </div>
 
@@ -386,94 +355,178 @@ export const RegexTester: React.FC = () => {
         </div>
       )}
 
-      {/* AI Explanation Modal */}
-      {showAiModal && (
+      {/* Embedded Semantic Explainer Modal */}
+      {showAiModal && aiExplanation && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto p-6 space-y-5 shadow-2xl">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full max-h-[88vh] overflow-y-auto p-6 space-y-5 shadow-2xl">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center space-x-2">
-                <Sparkles className="w-5 h-5 text-indigo-400" />
-                <h3 className="text-base font-semibold text-slate-100">Gemini AI Regex Breakdown</h3>
+              <div className="flex items-center space-x-2.5">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                  <Zap className="w-4 h-4 text-amber-300" />
+                </div>
+                <div>
+                  <h3 className="text-base font-semibold text-slate-100 flex items-center gap-2">
+                    <span>Embedded Semantic Regex Explainer</span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                      Local Engine • 0ms
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Client-side AST parser, security/ReDoS diagnostics, and sample generator. Zero external API needed.
+                  </p>
+                </div>
               </div>
               <button
                 onClick={() => setShowAiModal(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {aiLoading && (
-              <div className="py-12 flex flex-col items-center justify-center space-y-3">
-                <div className="w-8 h-8 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
-                <p className="text-xs text-slate-400">Analyzing regex logic & edge cases with Gemini 3.8 Flash...</p>
+            <div className="space-y-4 text-xs">
+              {/* Pattern Banner */}
+              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 font-mono text-xs text-indigo-300 flex items-center justify-between">
+                <span>/{pattern}/{flags}</span>
+                <span className="text-[10px] text-slate-500 font-sans">{aiExplanation.tokens.length} tokens</span>
               </div>
-            )}
 
-            {aiError && (
-              <div className="p-4 rounded-xl bg-rose-950/30 border border-rose-800 text-rose-300 text-xs">
-                {aiError}
-              </div>
-            )}
-
-            {aiExplanation && !aiLoading && (
-              <div className="space-y-4 text-xs">
-                {/* Summary */}
-                <div className="p-3.5 rounded-xl bg-indigo-950/30 border border-indigo-800/60 text-indigo-200">
-                  <div className="font-semibold text-indigo-300 uppercase tracking-wider text-[10px] mb-1">
-                    Summary Overview
-                  </div>
-                  <p className="text-sm text-slate-200 leading-relaxed">{aiExplanation.summary}</p>
+              {/* Summary */}
+              <div className="p-3.5 rounded-xl bg-indigo-950/30 border border-indigo-800/60 text-indigo-200">
+                <div className="font-semibold text-indigo-300 uppercase tracking-wider text-[10px] mb-1">
+                  Executive Summary
                 </div>
-
-                {/* Tokens analysis */}
-                {aiExplanation.tokens?.length > 0 && (
-                  <div className="space-y-2">
-                    <div className="font-semibold text-slate-300 uppercase tracking-wider text-[11px]">
-                      Token-by-Token Logic
-                    </div>
-                    <div className="space-y-1.5">
-                      {aiExplanation.tokens.map((t, i) => (
-                        <div key={i} className="p-2 rounded bg-slate-950 border border-slate-800 flex items-start space-x-2 font-mono">
-                          <span className="text-indigo-400 font-bold shrink-0">{t.part}</span>
-                          <span className="text-slate-400 font-sans">{t.explanation}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Potential Pitfalls & Gotchas */}
-                {aiExplanation.potentialPitfalls?.length > 0 && (
-                  <div className="p-3.5 rounded-xl bg-amber-950/30 border border-amber-800/60 text-amber-200 space-y-1.5">
-                    <div className="font-semibold text-amber-300 uppercase tracking-wider text-[10px] flex items-center space-x-1">
-                      <AlertTriangle className="w-3.5 h-3.5" />
-                      <span>Edge Cases & Pitfalls</span>
-                    </div>
-                    <ul className="list-disc pl-4 space-y-1 text-amber-200/90">
-                      {aiExplanation.potentialPitfalls.map((p, i) => (
-                        <li key={i}>{p}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {/* Suggested Optimizations */}
-                {aiExplanation.suggestedOptimizations?.length > 0 && (
-                  <div className="p-3.5 rounded-xl bg-emerald-950/30 border border-emerald-800/60 text-emerald-200 space-y-1.5">
-                    <div className="font-semibold text-emerald-300 uppercase tracking-wider text-[10px] flex items-center space-x-1">
-                      <Lightbulb className="w-3.5 h-3.5" />
-                      <span>Optimizations & Recommendations</span>
-                    </div>
-                    <ul className="list-disc pl-4 space-y-1 text-emerald-200/90">
-                      {aiExplanation.suggestedOptimizations.map((opt, i) => (
-                        <li key={i}>{opt}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                <p className="text-sm text-slate-200 leading-relaxed">{aiExplanation.summary}</p>
               </div>
-            )}
+
+              {/* Capture Groups / Assertions */}
+              {aiExplanation.captureGroups?.length > 0 && (
+                <div className="space-y-2">
+                  <div className="font-semibold text-slate-300 uppercase tracking-wider text-[11px]">
+                    Group Constructs & Lookarounds ({aiExplanation.captureGroups.length})
+                  </div>
+                  <div className="space-y-1.5">
+                    {aiExplanation.captureGroups.map((g, i) => (
+                      <div key={i} className="p-2.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="text-purple-300 font-bold font-mono text-[11px]">{g.group}</span>
+                          <code className="px-1.5 py-0.5 rounded bg-slate-900 text-slate-300 font-mono text-[10px]">
+                            {g.pattern}
+                          </code>
+                        </div>
+                        <p className="text-slate-400 text-[11px]">{g.purpose}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Auto-Generated Test Cases */}
+              {aiExplanation.testCases &&
+                (aiExplanation.testCases.shouldMatch?.length > 0 ||
+                  aiExplanation.testCases.shouldFail?.length > 0) && (
+                  <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="font-semibold text-slate-300 uppercase tracking-wider text-[11px] flex items-center space-x-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Auto-Generated Test Cases</span>
+                      </div>
+                      <button
+                        onClick={loadTestCasesIntoEditor}
+                        className="px-2 py-1 rounded bg-indigo-600/80 hover:bg-indigo-600 text-white text-[10px] font-medium transition flex items-center space-x-1"
+                      >
+                        <span>Load Cases into Tester</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      {/* Should Match */}
+                      <div className="space-y-1.5">
+                        <div className="text-[10px] uppercase font-bold text-emerald-400 flex items-center space-x-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>Should Match</span>
+                        </div>
+                        <div className="space-y-1 font-mono text-[11px]">
+                          {aiExplanation.testCases.shouldMatch.map((val, idx) => (
+                            <div key={idx} className="px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 truncate">
+                              {val}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Should Fail */}
+                      <div className="space-y-1.5">
+                        <div className="text-[10px] uppercase font-bold text-rose-400 flex items-center space-x-1">
+                          <XCircle className="w-3 h-3" />
+                          <span>Should Not Match</span>
+                        </div>
+                        <div className="space-y-1 font-mono text-[11px]">
+                          {aiExplanation.testCases.shouldFail.map((val, idx) => (
+                            <div key={idx} className="px-2 py-1 rounded bg-rose-500/10 border border-rose-500/20 text-rose-300 truncate">
+                              {val}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+              {/* Potential Pitfalls & Gotchas */}
+              {aiExplanation.potentialPitfalls?.length > 0 && (
+                <div className="p-3.5 rounded-xl bg-amber-950/20 border border-amber-800/40 text-amber-200 space-y-1.5">
+                  <div className="font-semibold text-amber-300 uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    <span>Security & Performance Diagnostics</span>
+                  </div>
+                  <ul className="space-y-1.5 text-amber-200/90 text-[11px]">
+                    {aiExplanation.potentialPitfalls.map((p, i) => (
+                      <li key={i} className="flex items-start space-x-1.5">
+                        <span className="text-amber-400">•</span>
+                        <span>{p}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Suggested Optimizations */}
+              {aiExplanation.suggestedOptimizations?.length > 0 && (
+                <div className="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-800/40 text-emerald-200 space-y-1.5">
+                  <div className="font-semibold text-emerald-300 uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                    <Lightbulb className="w-3.5 h-3.5" />
+                    <span>Actionable Optimizations</span>
+                  </div>
+                  <ul className="space-y-1 text-emerald-200/90 text-[11px]">
+                    {aiExplanation.suggestedOptimizations.map((opt, i) => (
+                      <li key={i} className="flex items-start space-x-1.5">
+                        <span className="text-emerald-400">✓</span>
+                        <span>{opt}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Tokens breakdown */}
+              {aiExplanation.tokens?.length > 0 && (
+                <div className="space-y-2">
+                  <div className="font-semibold text-slate-300 uppercase tracking-wider text-[11px]">
+                    Detailed Token Analysis
+                  </div>
+                  <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
+                    {aiExplanation.tokens.map((t, i) => (
+                      <div key={i} className="p-1.5 rounded bg-slate-950 border border-slate-800/80 flex items-start space-x-2 font-mono text-[11px]">
+                        <span className="text-indigo-400 font-bold shrink-0">{t.part}</span>
+                        <span className="text-slate-400 font-sans text-xs">{t.explanation}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

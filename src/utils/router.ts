@@ -42,11 +42,11 @@ export const ROUTES: Record<string, RouteConfig> = {
   regex: {
     path: '/regex',
     tool: 'regex',
-    label: 'Regex & AI Explainer',
-    title: 'Regex Tester & Gemini AI Explainer | Parso',
+    label: 'Regex & Explainer',
+    title: 'Regex Tester & Embedded Semantic Explainer | Parso',
     description:
-      'Real-time regular expression tester with live match highlighting, capture group inspector, syntax token breakdown, and AI logic explanation.',
-    keywords: 'regex tester, regex online, regular expression explainer, regex101 alternative, regex ai',
+      'Real-time regular expression tester with live match highlighting, capture group inspector, syntax token breakdown, ReDoS security diagnostics, and embedded AST explanation with zero API keys.',
+    keywords: 'regex tester, regex online, regular expression explainer, regex101 alternative, regex ast, regex redos',
   },
   curl: {
     path: '/curl',

@@ -27,7 +27,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'jwt', label: 'JWT Debugger', icon: <KeyRound className="w-4 h-4" /> },
     { id: 'json', label: 'JSON Studio & Diff', icon: <FileCode2 className="w-4 h-4" /> },
     { id: 'cron', label: 'Cron Visualizer', icon: <Clock className="w-4 h-4" /> },
-    { id: 'regex', label: 'Regex & AI Explainer', icon: <Regex className="w-4 h-4" /> },
+    { id: 'regex', label: 'Regex & Explainer', icon: <Regex className="w-4 h-4" /> },
     { id: 'curl', label: 'cURL Converter', icon: <Terminal className="w-4 h-4" /> },
   ];
 

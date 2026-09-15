@@ -79,6 +79,10 @@ export interface AiRegexExplanation {
   captureGroups: Array<{ group: string; pattern: string; purpose: string }>;
   potentialPitfalls: string[];
   suggestedOptimizations: string[];
+  testCases?: {
+    shouldMatch: string[];
+    shouldFail: string[];
+  };
 }
 
 export interface CurlParseResult {
