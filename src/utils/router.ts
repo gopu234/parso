@@ -51,11 +51,11 @@ export const ROUTES: Record<string, RouteConfig> = {
   curl: {
     path: '/curl',
     tool: 'curl',
-    label: 'cURL Converter',
-    title: 'cURL to Fetch, Axios & Python Converter | Parso',
+    label: 'cURL Executor',
+    title: 'cURL API Client & HTTP Executor | Parso',
     description:
-      'Instantly convert browser DevTools Copy as cURL commands into clean JavaScript Fetch, Axios, Python Requests, Python HTTPX, and Go code.',
-    keywords: 'curl to fetch, curl to axios, curl to python, convert curl, curl converter online',
+      'Execute any REST, GraphQL, or webhook API with full CORS bypass, request visual builder, real-time response inspector, and code generator.',
+    keywords: 'curl executor, api client, execute curl online, rest client, test api, postman alternative online, curl to fetch',
   },
 };
 

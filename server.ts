@@ -36,6 +36,105 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
+// cURL API Proxy Execution Endpoint (Bypasses CORS, handles all HTTP methods & headers)
+app.post("/api/curl/execute", async (req, res) => {
+  const startTime = Date.now();
+  try {
+    const { method = "GET", url, headers = {}, data, timeoutMs = 25000 } = req.body;
+
+    if (!url || typeof url !== "string") {
+      return res.status(400).json({ error: "Target URL is required" });
+    }
+
+    // Validate URL protocol
+    let targetUrl: URL;
+    try {
+      targetUrl = new URL(url);
+    } catch {
+      return res.status(400).json({ error: "Invalid URL. Please provide a full URL starting with http:// or https://" });
+    }
+
+    if (!["http:", "https:"].includes(targetUrl.protocol)) {
+      return res.status(400).json({ error: "Only HTTP and HTTPS protocols are supported" });
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), Math.min(timeoutMs, 30000));
+
+    const fetchHeaders: Record<string, string> = { ...headers };
+
+    // Default friendly User-Agent if not specified
+    if (!fetchHeaders["User-Agent"] && !fetchHeaders["user-agent"]) {
+      fetchHeaders["User-Agent"] = "Parso-Client/1.0";
+    }
+
+    const upperMethod = method.toUpperCase();
+    const fetchOptions: RequestInit = {
+      method: upperMethod,
+      headers: fetchHeaders,
+      signal: controller.signal,
+      redirect: "follow",
+    };
+
+    if (data && !["GET", "HEAD"].includes(upperMethod)) {
+      fetchOptions.body = typeof data === "string" ? data : JSON.stringify(data);
+    }
+
+    const response = await fetch(targetUrl.toString(), fetchOptions);
+    clearTimeout(timeoutId);
+
+    const durationMs = Date.now() - startTime;
+
+    const resHeaders: Record<string, string> = {};
+    response.headers.forEach((val, key) => {
+      resHeaders[key] = val;
+    });
+
+    const bodyText = await response.text();
+    const sizeBytes = Buffer.byteLength(bodyText, "utf8");
+
+    let isJson = false;
+    let parsedJson: any = null;
+    const contentType = (resHeaders["content-type"] || "").toLowerCase();
+    if (contentType.includes("json") || bodyText.trim().startsWith("{") || bodyText.trim().startsWith("[")) {
+      try {
+        parsedJson = JSON.parse(bodyText);
+        isJson = true;
+      } catch {
+        // Fall back to plain text
+      }
+    }
+
+    return res.json({
+      success: response.ok,
+      status: response.status,
+      statusText: response.statusText || (response.status === 200 ? "OK" : `${response.status}`),
+      headers: resHeaders,
+      body: bodyText,
+      isJson,
+      parsedJson,
+      durationMs,
+      sizeBytes,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (err: any) {
+    const durationMs = Date.now() - startTime;
+    const isTimeout = err.name === "AbortError";
+    return res.json({
+      success: false,
+      status: 0,
+      statusText: isTimeout ? "Timeout" : "Connection Error",
+      headers: {},
+      body: err.message || "Failed to execute request",
+      isJson: false,
+      durationMs,
+      sizeBytes: 0,
+      error: isTimeout ? "Request timed out after 25 seconds" : err.message || "Network execution failed",
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
 // AI Regex Explainer endpoint
 app.post("/api/ai/explain-regex", async (req, res) => {
   try {
@@ -169,7 +268,7 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`DevFormat Server running on http://0.0.0.0:${PORT}`);
+    console.log(`Parso Server running on http://0.0.0.0:${PORT}`);
   });
 }
 

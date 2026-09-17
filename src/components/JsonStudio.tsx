@@ -279,9 +279,9 @@ export const JsonStudio: React.FC = () => {
           )}
 
           {/* 2-Column Split: Input on Left, Formatted Output on Right */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="bg-slate-900 rounded-xl border border-slate-800 p-4 flex flex-col">
-              <div className="flex items-center justify-between mb-2">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-slate-900 rounded-xl border border-slate-800 p-4 flex flex-col space-y-3">
+              <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Raw Input JSON</span>
                 <button
                   onClick={() => setInputJson(defaultJson)}
@@ -294,19 +294,19 @@ export const JsonStudio: React.FC = () => {
                 value={inputJson}
                 onChange={(e) => setInputJson(e.target.value)}
                 placeholder="Paste or write any JSON object or array..."
-                rows={18}
-                className="w-full flex-1 bg-slate-950 border border-slate-800 rounded-lg p-3 font-mono text-xs text-slate-200 focus:outline-none focus:border-indigo-500 resize-none leading-relaxed"
+                rows={16}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 font-mono text-xs text-slate-200 focus:outline-none focus:border-indigo-500 resize-none leading-relaxed"
               />
             </div>
 
-            <div className="bg-slate-900 rounded-xl border border-slate-800 p-4 flex flex-col">
-              <div className="flex items-center justify-between mb-2">
+            <div className="bg-slate-900 rounded-xl border border-slate-800 p-4 flex flex-col space-y-3">
+              <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
                   Formatted Output
                 </span>
                 <span className="text-[11px] text-slate-500 font-mono">Real-time preview</span>
               </div>
-              <pre className="w-full flex-1 bg-slate-950 border border-slate-800 rounded-lg p-3 font-mono text-xs text-emerald-300/90 overflow-auto leading-relaxed select-all">
+              <pre className="w-full h-[380px] bg-slate-950 border border-slate-800 rounded-lg p-3 font-mono text-xs text-emerald-300/90 overflow-auto leading-relaxed select-all">
                 {formattedResult.formatted}
               </pre>
             </div>
@@ -346,28 +346,28 @@ export const JsonStudio: React.FC = () => {
           )}
 
           {/* 2-Pane Editor for Left vs Right */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="bg-slate-900 rounded-xl border border-slate-800 p-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-slate-900 rounded-xl border border-slate-800 p-4 flex flex-col space-y-2">
+              <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                 Original Version (A)
               </div>
               <textarea
                 value={diffLeft}
                 onChange={(e) => setDiffLeft(e.target.value)}
                 rows={12}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 font-mono text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 font-mono text-xs text-slate-200 focus:outline-none focus:border-indigo-500 resize-none leading-relaxed"
               />
             </div>
 
-            <div className="bg-slate-900 rounded-xl border border-slate-800 p-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+            <div className="bg-slate-900 rounded-xl border border-slate-800 p-4 flex flex-col space-y-2">
+              <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                 Modified Version (B)
               </div>
               <textarea
                 value={diffRight}
                 onChange={(e) => setDiffRight(e.target.value)}
                 rows={12}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 font-mono text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 font-mono text-xs text-slate-200 focus:outline-none focus:border-indigo-500 resize-none leading-relaxed"
               />
             </div>
           </div>
@@ -494,28 +494,28 @@ export const JsonStudio: React.FC = () => {
           )}
 
           {/* 2-Column Split: Data Instance on Left, Schema on Right */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="bg-slate-900 rounded-xl border border-slate-800 p-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-slate-900 rounded-xl border border-slate-800 p-4 flex flex-col space-y-3">
+              <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                 JSON Data Payload
               </div>
               <textarea
                 value={schemaInstance}
                 onChange={(e) => setSchemaInstance(e.target.value)}
                 rows={16}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 font-mono text-xs text-slate-200 focus:outline-none focus:border-indigo-500 leading-relaxed"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 font-mono text-xs text-slate-200 focus:outline-none focus:border-indigo-500 leading-relaxed resize-none"
               />
             </div>
 
-            <div className="bg-slate-900 rounded-xl border border-slate-800 p-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+            <div className="bg-slate-900 rounded-xl border border-slate-800 p-4 flex flex-col space-y-3">
+              <div className="text-xs font-semibold uppercase tracking-wider text-slate-400">
                 JSON Schema Specification
               </div>
               <textarea
                 value={schemaSpec}
                 onChange={(e) => setSchemaSpec(e.target.value)}
                 rows={16}
-                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 font-mono text-xs text-indigo-300/90 focus:outline-none focus:border-indigo-500 leading-relaxed"
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 font-mono text-xs text-indigo-300/90 focus:outline-none focus:border-indigo-500 leading-relaxed resize-none"
               />
             </div>
           </div>

@@ -1,4 +1,92 @@
-import { CurlParseResult } from '../types';
+import { CurlParseResult, CurlExecutionResult } from '../types';
+
+export async function executeCurlRequest(
+  parsed: CurlParseResult,
+  useProxy: boolean = true
+): Promise<CurlExecutionResult> {
+  const headers = { ...parsed.headers };
+  if (parsed.auth) {
+    const b64 = btoa(`${parsed.auth.user}:${parsed.auth.pass}`);
+    headers['Authorization'] = `Basic ${b64}`;
+  }
+  if (Object.keys(parsed.cookies).length > 0) {
+    const cookieStr = Object.entries(parsed.cookies)
+      .map(([k, v]) => `${k}=${v}`)
+      .join('; ');
+    headers['Cookie'] = cookieStr;
+  }
+
+  if (useProxy) {
+    // Execute through Parso proxy (Bypasses CORS, allows forbidden headers)
+    const res = await fetch('/api/curl/execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        method: parsed.method,
+        url: parsed.url,
+        headers,
+        data: parsed.data,
+      }),
+    });
+
+    const data: CurlExecutionResult = await res.json();
+    return data;
+  } else {
+    // Direct in-browser fetch
+    const startTime = performance.now();
+    try {
+      const options: RequestInit = {
+        method: parsed.method,
+        headers,
+      };
+      if (parsed.data && !['GET', 'HEAD'].includes(parsed.method.toUpperCase())) {
+        options.body = parsed.data;
+      }
+      const response = await fetch(parsed.url, options);
+      const durationMs = Math.round(performance.now() - startTime);
+
+      const resHeaders: Record<string, string> = {};
+      response.headers.forEach((val, key) => {
+        resHeaders[key] = val;
+      });
+
+      const bodyText = await response.text();
+      let isJson = false;
+      let parsedJson: any = null;
+      try {
+        parsedJson = JSON.parse(bodyText);
+        isJson = true;
+      } catch {}
+
+      return {
+        success: response.ok,
+        status: response.status,
+        statusText: response.statusText || (response.status === 200 ? 'OK' : `${response.status}`),
+        headers: resHeaders,
+        body: bodyText,
+        isJson,
+        parsedJson,
+        durationMs,
+        sizeBytes: new Blob([bodyText]).size,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (err: any) {
+      const durationMs = Math.round(performance.now() - startTime);
+      return {
+        success: false,
+        status: 0,
+        statusText: 'CORS or Network Error',
+        headers: {},
+        body: err.message || 'Direct browser fetch failed (likely blocked by CORS policy). Switch to "Proxy Execution" mode to execute successfully!',
+        isJson: false,
+        durationMs,
+        sizeBytes: 0,
+        error: `${err.message || 'Network error'}. Direct browser requests are subject to CORS. Switch to "Proxy Mode" above to bypass CORS!`,
+        timestamp: new Date().toISOString(),
+      };
+    }
+  }
+}
 
 export function parseCurl(curlCommand: string): CurlParseResult {
   if (!curlCommand || !curlCommand.trim()) {
@@ -403,27 +491,65 @@ export function generateBeautifiedCurl(parsed: CurlParseResult): string {
   return parts.join(' \\\n');
 }
 
+export function reconstructCurlCommand(
+  method: string,
+  url: string,
+  headers: Record<string, string>,
+  data?: string
+): string {
+  const parts: string[] = [`curl -X ${method.toUpperCase()} '${url || 'https://api.example.com'}'`];
+
+  Object.entries(headers).forEach(([k, v]) => {
+    if (k && v) {
+      parts.push(`  -H '${k}: ${v}'`);
+    }
+  });
+
+  if (data && !['GET', 'HEAD'].includes(method.toUpperCase())) {
+    try {
+      const obj = JSON.parse(data);
+      const jsonStr = JSON.stringify(obj, null, 2);
+      parts.push(`  --data-raw '${jsonStr.replace(/'/g, "\\'")}'`);
+    } catch {
+      parts.push(`  --data-raw '${data.replace(/'/g, "\\'")}'`);
+    }
+  }
+
+  return parts.join(' \\\n');
+}
+
 export const CURL_PRESETS = [
   {
-    name: 'GitHub API (GET with Bearer Auth)',
-    curl: `curl -X GET "https://api.github.com/user/repos?sort=updated&per_page=10" \\
+    name: 'GitHub Repo Info (GET)',
+    curl: `curl -X GET "https://api.github.com/repos/google/genai" \\
   -H "Accept: application/vnd.github.v3+json" \\
-  -H "Authorization: Bearer ghp_sampletoken_1234567890abcdef" \\
-  -H "User-Agent: Parso-Client"`,
+  -H "User-Agent: Parso-Client/1.0"`,
   },
   {
-    name: 'Stripe Payment Intent (POST with URL-encoded data)',
-    curl: `curl https://api.stripe.com/v1/payment_intents \\
-  -u sk_test_51MzExampleSecretKey: \\
-  -d "amount=2000" \\
-  -d "currency=usd" \\
-  -d "payment_method_types[]=card"`,
+    name: 'JSONPlaceholder Post (GET)',
+    curl: `curl -X GET "https://jsonplaceholder.typicode.com/posts/1" \\
+  -H "Accept: application/json"`,
   },
   {
-    name: 'JSON API Mutation (POST JSON Payload)',
-    curl: `curl -X POST "https://api.example.com/v1/projects" \\
-  -H "Content-Type: application/json" \\
-  -H "X-Client-Version: 2.4.0" \\
-  --data-raw '{"name":"AI Developer Studio","tier":"pro","settings":{"notify":true,"retentionDays":30}}'`,
+    name: 'Create Resource (POST JSON)',
+    curl: `curl -X POST "https://jsonplaceholder.typicode.com/posts" \\
+  -H "Content-Type: application/json; charset=UTF-8" \\
+  --data-raw '{"title":"Parso API Client","body":"Zero-latency developer suite testing","userId":42}'`,
+  },
+  {
+    name: 'HttpBin Inspect Headers (GET)',
+    curl: `curl -X GET "https://httpbin.org/headers" \\
+  -H "X-Custom-Client: Parso-DevSuite" \\
+  -H "Accept: application/json"`,
+  },
+  {
+    name: 'Update Resource (PUT)',
+    curl: `curl -X PUT "https://jsonplaceholder.typicode.com/posts/1" \\
+  -H "Content-Type: application/json; charset=UTF-8" \\
+  --data-raw '{"id":1,"title":"Updated with Parso","body":"Fast cURL execution test","userId":1}'`,
+  },
+  {
+    name: 'Delete Resource (DELETE)',
+    curl: `curl -X DELETE "https://jsonplaceholder.typicode.com/posts/1"`,
   },
 ];

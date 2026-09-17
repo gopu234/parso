@@ -28,7 +28,7 @@ export const Header: React.FC<HeaderProps> = ({
     { id: 'json', label: 'JSON Studio & Diff', icon: <FileCode2 className="w-4 h-4" /> },
     { id: 'cron', label: 'Cron Visualizer', icon: <Clock className="w-4 h-4" /> },
     { id: 'regex', label: 'Regex & Explainer', icon: <Regex className="w-4 h-4" /> },
-    { id: 'curl', label: 'cURL Converter', icon: <Terminal className="w-4 h-4" /> },
+    { id: 'curl', label: 'cURL Executor', icon: <Terminal className="w-4 h-4" /> },
   ];
 
   const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>, tool: ActiveTool) => {

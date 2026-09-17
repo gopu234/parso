@@ -95,3 +95,40 @@ export interface CurlParseResult {
   isValid: boolean;
   error?: string;
 }
+
+export interface CurlExecutionResult {
+  success: boolean;
+  status: number;
+  statusText: string;
+  headers: Record<string, string>;
+  body: string;
+  isJson: boolean;
+  parsedJson?: any;
+  durationMs: number;
+  sizeBytes: number;
+  error?: string;
+  timestamp: string;
+}
+
+export interface CurlHistoryItem {
+  id: string;
+  method: string;
+  url: string;
+  timestamp: string;
+  status?: number;
+  durationMs?: number;
+  curlCommand: string;
+}
+
+export interface SavedCurlRequest {
+  id: string;
+  name: string;
+  method: string;
+  url: string;
+  headers: Record<string, string>;
+  data?: string;
+  curlCommand: string;
+  createdAt: string;
+  updatedAt?: string;
+  tags?: string[];
+}

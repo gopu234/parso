@@ -5,7 +5,7 @@ import { JwtDebugger } from './components/JwtDebugger';
 import { CronVisualizer } from './components/CronVisualizer';
 import { JsonStudio } from './components/JsonStudio';
 import { RegexTester } from './components/RegexTester';
-import { CurlConverter } from './components/CurlConverter';
+import { CurlExecutor } from './components/CurlExecutor';
 import { QuickBase64Modal } from './components/QuickBase64Modal';
 import {
   getToolFromPath,
@@ -100,7 +100,7 @@ export default function App() {
       />
 
       {/* Main Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
+      <main className="max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTool}
@@ -113,13 +113,13 @@ export default function App() {
             {activeTool === 'json' && <JsonStudio />}
             {activeTool === 'cron' && <CronVisualizer />}
             {activeTool === 'regex' && <RegexTester />}
-            {activeTool === 'curl' && <CurlConverter />}
+            {activeTool === 'curl' && <CurlExecutor />}
           </motion.div>
         </AnimatePresence>
       </main>
 
       {/* Modern Developer Footer */}
-      <footer className="border-t border-slate-800/80 bg-slate-900/50 py-4 px-4 sm:px-6 mt-auto text-xs text-slate-500">
+      <footer className="border-t border-slate-800/80 bg-slate-900/50 py-3 px-4 sm:px-6 mt-auto text-xs text-slate-500 shrink-0">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center space-x-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
